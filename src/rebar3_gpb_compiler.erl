@@ -17,7 +17,11 @@
 compile(AppInfo, State) ->
     AppDir = rebar_app_info:dir(AppInfo),
     DepsDir = rebar_dir:deps_dir(State),
-    AppOutDir = rebar_app_info:out_dir(AppInfo),
+    {CmdArgs, _} = rebar_state:command_parsed_args(State),
+    AppOutDir = case proplists:get_value(out_dir, CmdArgs) of
+                    undefined -> rebar_app_info:out_dir(AppInfo);
+                    UserProvidedOutDir -> normalize_path(UserProvidedOutDir)
+                end,
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts0} = dict:find(gpb_opts, Opts),
     %% check if non-recursive
@@ -81,7 +85,11 @@ compile(AppInfo, State) ->
 clean(AppInfo, State) ->
     AppDir = rebar_app_info:dir(AppInfo),
     DepsDir = rebar_dir:deps_dir(State),
-    AppOutDir = rebar_app_info:out_dir(AppInfo),
+    {CmdArgs, _} = rebar_state:command_parsed_args(State),
+    AppOutDir = case proplists:get_value(out_dir, CmdArgs) of
+                    undefined -> rebar_app_info:out_dir(AppInfo);
+                    UserProvidedOutDir -> normalize_path(UserProvidedOutDir)
+                end,
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts} = dict:find(gpb_opts, Opts),
     TargetErlDir = filename:join([AppOutDir,
@@ -271,3 +279,6 @@ proto_include_paths(_AppDir, [], Opts) -> Opts;
 proto_include_paths(AppDir, [Proto | Protos], Opts) ->
   ProtoDir = filename:join([AppDir, filename:dirname(Proto)]),
   proto_include_paths(AppDir, Protos, Opts ++ [{i, ProtoDir}]).
+
+normalize_path(Dir) ->
+    filename:absname(Dir).
